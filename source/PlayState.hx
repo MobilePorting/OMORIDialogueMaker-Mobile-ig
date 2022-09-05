@@ -327,7 +327,7 @@ class YamlInstance
 			toAppend += "\n  faceindex: " + faceindex;
 		}
 
-		toAppend += "\n  text: " + charStr + text + "\n";
+		toAppend += "\n  text: \\n" + charStr + text + "\n";
 
 		content += toAppend;
 	}
