@@ -4,11 +4,16 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
 import flixel.addons.ui.FlxInputText;
+import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.text.FlxText;
+import flixel.tweens.FlxTween;
 import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
 import lime.utils.Assets;
+import sys.io.File;
 import textermod.FlxInputTextRTL;
+
+using StringTools;
 
 typedef Dialogue =
 {
@@ -21,6 +26,7 @@ typedef Dialogue =
 
 class PlayState extends FlxState
 {
+	var dialogueSprites:FlxTypedGroup<DialogueDisplayObject>;
 	var dialogueArray:Array<Dialogue> = [];
 
 	var numTextLabel:FlxText;
@@ -37,28 +43,36 @@ class PlayState extends FlxState
 	var addButton:FlxButton;
 	var removeButton:FlxButton;
 
+	var nextPage:FlxButton;
+	var prevPage:FlxButton;
+	var pageText:FlxInputText;
+
 	var yamlInstance:YamlInstance;
+	var curRenderedDDOs:Int = 0;
+	var page:Int = 0;
+
+	var scrollVel = 180;
 
 	public function new()
 	{
 		super();
 		yamlInstance = {};
-		yamlInstance.write("0", "Hey, SUNNY.", "AUBREY", "Test", "1");
 	}
 
 	override public function create()
 	{
 		bgColor = #if (!debug) FlxColor.WHITE #else FlxColor.GRAY #end;
 		createUI();
+		dialogueSprites = new FlxTypedGroup<DialogueDisplayObject>();
+		add(dialogueSprites);
 		super.create();
 	}
 
 	var num:Int = 0;
-	var secondaryNum:Int = 0;
+	var secondaryNum:Int = 1;
 
 	function createUI()
 	{
-		var centerX = 480;
 		var centerY = 320;
 
 		nameTextLabel = new FlxText(40, centerY + 40, "Name", 14);
@@ -83,6 +97,34 @@ class PlayState extends FlxState
 
 		addButton = new FlxButton(faceindexText.x, faceindexText.y + 50, "Add", () ->
 		{
+			if (numText.text == '' || numText.text.startsWith('-'))
+				return;
+			for (i in dialogueArray)
+			{
+				if (i.messageNo == numText.text)
+				{
+					i = {
+						messageNo: numText.text,
+						name: nameText.text,
+						content: textInput.text,
+						faceset: facesetText.text,
+						faceindex: faceindexText.text
+					}
+
+					trace('yehhhh', i);
+
+					for (boob in dialogueSprites.members)
+					{
+						if (boob.messageNo == i.messageNo)
+						{
+							boob.withData(i.messageNo, i.name, i.content);
+						}
+					}
+
+					return;
+				}
+			}
+
 			dialogueArray.push({
 				messageNo: numText.text,
 				name: nameText.text,
@@ -90,17 +132,63 @@ class PlayState extends FlxState
 				faceset: facesetText.text,
 				faceindex: faceindexText.text
 			});
+
+			var ddo = new DialogueDisplayObject(500, 0, numText.text, nameText.text, textInput.text);
+			dialogueSprites.add(ddo);
+
 			trace('added to dialogue arraya', dialogueArray.length);
+			if (!FlxG.keys.pressed.SHIFT)
+			{
+				num++;
+				numText.text = Std.string(num);
+				secondaryNum = 1;
+			}
+			else
+			{
+				secondaryNum++;
+				numText.text = Std.string(num + '-' + secondaryNum);
+			}
+
+			updatePageDisplay();
 		});
 
 		removeButton = new FlxButton(addButton.x + addButton.width + 20, addButton.y, "Remove", () ->
 		{
+			var dontFreeYourMemoryYet:String;
+
 			for (d in dialogueArray)
 			{
 				if (d.messageNo == numText.text)
 				{
+					dontFreeYourMemoryYet = d.messageNo;
 					dialogueArray.remove(d);
 					trace("Deleted");
+					if (!FlxG.keys.pressed.SHIFT)
+					{
+						if (num > 0)
+						{
+							num--;
+							numText.text = Std.string(num);
+						}
+					}
+					else
+					{
+						if (secondaryNum > 1)
+						{
+							secondaryNum--;
+							numText.text = Std.string(num + '-' + secondaryNum);
+						}
+					}
+
+					for (c in dialogueSprites.members)
+					{
+						if (c.messageNo == dontFreeYourMemoryYet)
+						{
+							dialogueSprites.remove(c, true);
+						}
+					}
+
+					updatePageDisplay();
 					break;
 				}
 			}
@@ -124,10 +212,92 @@ class PlayState extends FlxState
 		add(removeButton);
 	}
 
+	function updatePageDisplay(number:Float = 60)
+	{
+		for (i in 0...dialogueSprites.length)
+		{
+			var d = dialogueSprites.members[i];
+			// trace(i);
+			if (i == 0)
+			{
+				d.pos(500, number);
+			}
+			else
+			{
+				d.pos(500, dialogueSprites.members[i - 1].box.y + 80);
+			}
+		}
+	}
+
+	function write()
+	{
+		for (b in dialogueArray)
+		{
+			trace(b.faceindex, b.faceset, b.name);
+			yamlInstance.write(b.messageNo, b.content.replace('​', ''), b.name, b.faceset, b.faceindex);
+		}
+		File.saveContent('assets/data/lol.yaml', '');
+		File.saveContent('assets/data/lol.yaml', yamlInstance.content);
+	}
+
 	override public function update(elapsed:Float)
 	{
+		var focused = textInput.hasFocus || nameText.hasFocus || numText.hasFocus || facesetText.hasFocus || faceindexText.hasFocus;
+
+		if (FlxG.keys.justPressed.S && FlxG.keys.pressed.S && !focused)
+		{
+			write();
+		}
+
+		for (a in dialogueArray)
+		{
+			if (a.messageNo == numText.text)
+			{
+				addButton.text = "Update";
+				trace("se.xsex.sex");
+				break;
+			}
+			else
+			{
+				addButton.text = "Add";
+				break;
+			}
+		}
+
+		if (FlxG.keys.justPressed.DOWN && !focused)
+		{
+			updatePageDisplay(dialogueSprites.members[0].y + 580);
+		}
+		else if (FlxG.keys.justPressed.UP && !focused)
+		{
+			updatePageDisplay(dialogueSprites.members[0].y - 580);
+		}
+		for (stuff in dialogueSprites.members)
+		{
+			if (FlxG.mouse.overlaps(stuff))
+			{
+				stuff.box.x = 480;
+				stuff.upText.x = 484;
+				stuff.contentText.x = 484;
+			}
+			else
+			{
+				stuff.box.x = 500;
+				stuff.upText.x = 504;
+				stuff.contentText.x = 504;
+			}
+		}
+
+		if (numText.hasFocus && FlxG.keys.justPressed.ANY)
+		{
+			if (!numText.text.contains('-') || numText.text != '')
+				num = Std.parseInt(numText.text);
+		}
+
+		#if debug
 		if (FlxG.keys.pressed.CONTROL && FlxG.keys.justPressed.R)
 			FlxG.resetState();
+		#end
 		super.update(elapsed);
 	}
 }
@@ -146,18 +316,18 @@ class YamlInstance
 	{
 		var toAppend = "message_" + messageNo + ":";
 		var charStr = '';
-		if (character != null || character.length < 1)
+		if (character.length != 0)
 			charStr = '<' + character + '> ';
-		if (faceset != null || faceset.length < 1)
+		if (faceset.length != 0)
 		{
-			toAppend += "\n\tfaceset: " + faceset;
+			toAppend += "\n  faceset: " + faceset;
 		}
-		if (faceindex != null || faceset.length < 1)
+		if (faceindex.length != 0)
 		{
-			toAppend += "\n\tfaceindex: " + faceindex;
+			toAppend += "\n  faceindex: " + faceindex;
 		}
 
-		toAppend += "\n\ttext: " + charStr + text + "\n";
+		toAppend += "\n  text: " + charStr + text + "\n";
 
 		content += toAppend;
 	}
