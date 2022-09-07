@@ -72,13 +72,13 @@ class PlayState extends FlxState
 	final SINEH = ~/(?<=sinh\().*?(?=\))/g;
 	final SHAKE = ~/(?<=shake\().*?(?=\))/g;
 	final SHAKE2 = ~/(?<=shake2\().*?(?=\))/g;
-	final RAINBOW = ~/(?<=rainbow\().?*(?=\))/g;
+	final RAINBOW = ~/(?<=rainbow\().*?(?=\))/g;
 	final ICON = ~/(?<=icon\().*?(?=\))/g;
-	final VARIABLE = ~/(?<=var\().?*(?=\))/g;
-	final ACTOR = ~/(?<=actor\().?*(?=\))/g;
-	final PARTY = ~/(?<=party\().?*(?=\))/g;
-	final EVENT = ~/(?<=event\().?*(?=\))/g;
-	final SETVAR = ~/(?<=setvar\().?*(?=\))/g;
+	final VARIABLE = ~/(?<=var\().*?(?=\))/g;
+	final ACTOR = ~/(?<=actor\().*?(?=\))/g;
+	final PARTY = ~/(?<=party\().*?(?=\))/g;
+	final EVENT = ~/(?<=event\().*?(?=\))/g;
+	final SETVAR = ~/(?<=setvar\().*?(\))/g;
 
 	public function new()
 	{
@@ -295,10 +295,10 @@ class PlayState extends FlxState
 		var sinehs = getMatches(SINEH, content);
 
 		var shakes = getMatches(SHAKE, content);
-		var shakes2 = getMatches(SHAKE, content);
+		var shakes2 = getMatches(SHAKE2, content);
 
 		var vars = getMatches(VARIABLE, content);
-		var setvars = getMatches(SETVAR, content);
+		var setvars = getMatches(~/<b>()<b>/g, content);
 
 		var icons = getMatches(ICON, content);
 		var events = getMatches(EVENT, content);
