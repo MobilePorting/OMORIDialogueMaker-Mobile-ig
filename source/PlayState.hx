@@ -511,10 +511,10 @@ class YamlInstance
 		var charStr = '';
 		if (character != null && character.length != 0)
 		{
-			if (!character.startsWith("/")) // MACROS
+			if (!character.startsWith("\\")) // MACROS
 				charStr = '<' + character + '> ';
 			else
-				charStr = character + " ";
+				charStr = character;
 		}
 		if (faceset != null && faceset.length != 0)
 		{
