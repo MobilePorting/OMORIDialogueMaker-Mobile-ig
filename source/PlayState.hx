@@ -66,6 +66,10 @@ class PlayState extends FlxState
 
 	var savePath:String;
 
+	// regex patterns
+	var SINE = ~/(?<=sin\().*?(?=\))/g;
+	var SHAKE = ~/(?<=shake\().*?(?=\))/g;
+
 	public function new()
 	{
 		super();
@@ -75,7 +79,7 @@ class PlayState extends FlxState
 
 	override public function create()
 	{
-		bgColor = #if (!debug) FlxColor.WHITE #else FlxColor.GRAY #end;
+		bgColor = FlxColor.GRAY;
 		createUI();
 		dialogueSprites = new FlxTypedGroup<DialogueDisplayObject>();
 		add(dialogueSprites);
@@ -103,7 +107,6 @@ class PlayState extends FlxState
 		numTextLabel = new FlxText(nameText.x + nameText.width + 14, centerY + 40, "Num", 14);
 		numTextLabel.color = 0xff000000;
 		numText = new FlxInputText(numTextLabel.x, centerY + 60, 46, "0", 14);
-		numText.customFilterPattern = ~/[^0-9\-]*/g;
 
 		textInput = new FlxInputTextRTL(40, centerY + 90, Std.int(nameText.width + numText.width + 14), "", 14);
 
@@ -120,6 +123,7 @@ class PlayState extends FlxState
 		{
 			if (numText.text == '' || numText.text.startsWith('-'))
 				return;
+			var exists = false;
 			for (i in dialogueArray)
 			{
 				if (i.messageNo == numText.text)
@@ -140,8 +144,13 @@ class PlayState extends FlxState
 						}
 					}
 
-					return;
+					exists = true;
 				}
+			}
+
+			if (exists)
+			{
+				return;
 			}
 
 			dialogueArray.push({
@@ -268,6 +277,29 @@ class PlayState extends FlxState
 		add(autosaveButton);
 	}
 
+	function preProcess(content:String, ignoreNewLines:Bool = false)
+	{
+		var sines = getMatches(SINE, content);
+		var shakes = getMatches(SHAKE, content);
+
+		trace(sines, shakes);
+
+		if (!ignoreNewLines)
+			content = content.replace("\n", "");
+
+		for (i in sines)
+		{
+			content = content.replace('sin($i)', '\\sinv[1]$i\\sinv[0]');
+		}
+
+		for (i in shakes)
+		{
+			content = content.replace('shake($i)', '\\quake[1]$i\\quake[0]');
+		}
+
+		return content;
+	}
+
 	function load()
 	{
 		var fr:FileReference = new FileReference();
@@ -316,6 +348,7 @@ class PlayState extends FlxState
 			var name:String = getMatches(char_pattern, msg.get("text"))[0].replace("<", "").replace(">", "");
 			text = text.replace(name, "");
 			text = text.replace("\\n<>", "");
+
 			var thing:Dialogue = {
 				messageNo: m,
 				content: text,
@@ -378,8 +411,10 @@ class PlayState extends FlxState
 	{
 		for (b in dialogueArray)
 		{
+			b.content = preProcess(b.content);
 			yamlInstance.write(b.messageNo, b.content.replace('​', ''), b.name, b.faceset, b.faceindex);
 		}
+
 		new FileReference().save(yamlInstance.content, "dialogue.yaml");
 	}
 
@@ -391,8 +426,6 @@ class PlayState extends FlxState
 		}
 	}
 
-	var x = false;
-
 	override public function update(elapsed:Float)
 	{
 		var focused = textInput.hasFocus || nameText.hasFocus || numText.hasFocus || facesetText.hasFocus || faceindexText.hasFocus;
@@ -402,7 +435,7 @@ class PlayState extends FlxState
 			saveAs();
 		}
 
-		if (FlxG.keys.justPressed.L && FlxG.keys.pressed.CONTROL && !focused && !x)
+		if (FlxG.keys.justPressed.L && FlxG.keys.pressed.CONTROL && !focused)
 		{
 			load();
 		}
@@ -426,9 +459,9 @@ class PlayState extends FlxState
 					{
 						if (d.messageNo == stuff.messageNo)
 						{
-							nameText.text = d.name;
-							numText.text = d.messageNo;
-							textInput.text = d.content;
+							nameText.text = stuff.name;
+							numText.text = stuff.messageNo;
+							textInput.text = stuff.content;
 							facesetText.text = d.faceset;
 							faceindexText.text = d.faceindex;
 						}
@@ -457,6 +490,7 @@ class PlayState extends FlxState
 		if (FlxG.keys.pressed.CONTROL && FlxG.keys.justPressed.R)
 			FlxG.resetState();
 		#end
+
 		super.update(elapsed);
 	}
 }
@@ -476,7 +510,12 @@ class YamlInstance
 		var toAppend = "message_" + messageNo + ":";
 		var charStr = '';
 		if (character != null && character.length != 0)
-			charStr = '<' + character + '> ';
+		{
+			if (!character.startsWith("/")) // MACROS
+				charStr = '<' + character + '> ';
+			else
+				charStr = character + " ";
+		}
 		if (faceset != null && faceset.length != 0)
 		{
 			toAppend += "\n  faceset: " + faceset;
