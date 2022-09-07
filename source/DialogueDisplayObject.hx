@@ -39,7 +39,7 @@ class DialogueDisplayObject extends FlxGroup
 		this.content = content;
 
 		box = new FlxSprite(x, y).makeGraphic(200, 60, FlxColor.WHITE);
-		upText = new FlxText(x + 2, y + 2, 200, ("No. " + messageNo + " - " + name).substring(0, 20), 14);
+		upText = new FlxText(x + 2, y + 2, 0, ("No. " + messageNo + " - " + name).substring(0, 20), 14);
 		upText.color = 0xff000000;
 		contentText = new FlxText(upText.x, upText.y + 20, 200, content.substring(0, 30), 14);
 		contentText.color = 0xff000000;

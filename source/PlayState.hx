@@ -1,5 +1,6 @@
 package;
 
+import flixel.FlxCamera;
 import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
@@ -9,9 +10,18 @@ import flixel.text.FlxText;
 import flixel.tweens.FlxTween;
 import flixel.ui.FlxButton;
 import flixel.util.FlxColor;
+import flixel.util.FlxTimer;
 import lime.utils.Assets;
-import sys.io.File;
+import openfl.events.Event;
+import openfl.filesystem.File;
+import openfl.net.FileFilter;
+import openfl.net.FileReference;
+import sys.FileSystem;
 import textermod.FlxInputTextRTL;
+import yaml.Yaml;
+import yaml.YamlType.AnyYamlType;
+import yaml.type.YString;
+import yaml.util.ObjectMap.AnyObjectMap;
 
 using StringTools;
 
@@ -43,9 +53,10 @@ class PlayState extends FlxState
 	var addButton:FlxButton;
 	var removeButton:FlxButton;
 
-	var nextPage:FlxButton;
-	var prevPage:FlxButton;
-	var pageText:FlxInputText;
+	var saveButton:FlxButton;
+	var loadButton:FlxButton;
+	var newButton:FlxButton;
+	var autosaveButton:FlxButton;
 
 	var yamlInstance:YamlInstance;
 	var curRenderedDDOs:Int = 0;
@@ -53,9 +64,12 @@ class PlayState extends FlxState
 
 	var scrollVel = 180;
 
+	var savePath:String;
+
 	public function new()
 	{
 		super();
+		FlxG.save.bind("vidyagirl", "OmoriDialogueMaker");
 		yamlInstance = {};
 	}
 
@@ -65,6 +79,13 @@ class PlayState extends FlxState
 		createUI();
 		dialogueSprites = new FlxTypedGroup<DialogueDisplayObject>();
 		add(dialogueSprites);
+
+		new FlxTimer().start(30, _ ->
+		{
+			if (dialogueArray.length > 0)
+				FlxG.save.data.autosave = dialogueArray;
+		}, 0);
+
 		super.create();
 	}
 
@@ -111,8 +132,6 @@ class PlayState extends FlxState
 						faceindex: faceindexText.text
 					}
 
-					trace('yehhhh', i);
-
 					for (boob in dialogueSprites.members)
 					{
 						if (boob.messageNo == i.messageNo)
@@ -136,7 +155,6 @@ class PlayState extends FlxState
 			var ddo = new DialogueDisplayObject(500, 0, numText.text, nameText.text, textInput.text);
 			dialogueSprites.add(ddo);
 
-			trace('added to dialogue arraya', dialogueArray.length);
 			if (!FlxG.keys.pressed.SHIFT)
 			{
 				num++;
@@ -162,7 +180,7 @@ class PlayState extends FlxState
 				{
 					dontFreeYourMemoryYet = d.messageNo;
 					dialogueArray.remove(d);
-					trace("Deleted");
+
 					if (!FlxG.keys.pressed.SHIFT)
 					{
 						if (num > 0)
@@ -194,22 +212,150 @@ class PlayState extends FlxState
 			}
 		});
 
+		saveButton = new FlxButton(addButton.x, addButton.y + addButton.height * 2, "Save", saveAs);
+		loadButton = new FlxButton(removeButton.x, saveButton.y, "Load", load);
+		newButton = new FlxButton(removeButton.x, loadButton.y + loadButton.height * 2, "New File", () ->
+		{
+			var bg = new FlxSprite().makeGraphic(300, 240);
+			bg.screenCenter();
+			bg.color = 0xff909090;
+			var t = new FlxText("Are you sure?", 14);
+			t.color = 0xff000000;
+			t.setPosition(bg.x + bg.width / 2 - t.width, bg.y + bg.height / 2);
+			var yea = new FlxButton(t.x, t.y + 14 * 2, "Yes", () ->
+			{
+				FlxG.resetState();
+			});
+			var no:FlxButton;
+			no = new FlxButton(yea.x + yea.width + 20, yea.y, "No", () ->
+			{
+				remove(bg);
+				remove(t);
+				remove(yea);
+				remove(no);
+				bg.destroy();
+				t.destroy();
+				yea.destroy();
+				no.destroy();
+			});
+
+			add(bg);
+			add(t);
+			add(yea);
+			add(no);
+		});
+
+		autosaveButton = new FlxButton(addButton.x, newButton.y, "Load Autosave", () ->
+		{
+			dialogueArray = FlxG.save.data.autosave;
+			reloadPageDisplay();
+		});
+
 		add(nameTextLabel);
 		add(nameText);
-
 		add(numTextLabel);
 		add(numText);
-
 		add(textInput);
-
 		add(facesetTextLabel);
 		add(facesetText);
-
 		add(faceindexTextLabel);
 		add(faceindexText);
-
 		add(addButton);
 		add(removeButton);
+		add(saveButton);
+		add(loadButton);
+		add(newButton);
+		add(autosaveButton);
+	}
+
+	function load()
+	{
+		var fr:FileReference = new FileReference();
+		fr.addEventListener(Event.SELECT, l_onSelect);
+		fr.addEventListener(Event.CANCEL, l_onCancel);
+		var filters:Array<FileFilter> = [new FileFilter("YAML files", "*.yaml")];
+		fr.browse(filters);
+	}
+
+	function l_onSelect(ev:Event)
+	{
+		var fr:FileReference = cast(ev.target, FileReference);
+		fr.addEventListener(Event.COMPLETE, l_onLoad, false, 0, true);
+		fr.load();
+	}
+
+	function l_onLoad(ev:Event)
+	{
+		var fr:FileReference = cast(ev.target, FileReference);
+		fr.removeEventListener(Event.COMPLETE, l_onLoad);
+		dialogueArray = [];
+		for (d in dialogueSprites)
+		{
+			d.destroy();
+			dialogueSprites.remove(d);
+		}
+		parse(fr.data.toString());
+		reloadPageDisplay();
+	}
+
+	function l_onCancel(ev:Event) {}
+
+	function parse(data:String)
+	{
+		var pattern = ~/(?<=message_).*(?=:)/g;
+		var char_pattern = ~/<(.*?)>/g;
+		var matches = getMatches(pattern, data);
+		var parsed:AnyObjectMap = Yaml.parse(data);
+		for (m in matches)
+		{
+			var msg = parsed.get("message_" + m);
+			var text:String = msg.get("text");
+
+			var faceset:String = msg.get("faceset");
+			var faceindex:String = msg.get("faceindex");
+			var name:String = getMatches(char_pattern, msg.get("text"))[0].replace("<", "").replace(">", "");
+			text = text.replace(name, "");
+			text = text.replace("\\n<>", "");
+			var thing:Dialogue = {
+				messageNo: m,
+				content: text,
+				faceset: faceset,
+				faceindex: faceindex,
+				name: name
+			};
+
+			dialogueArray.push(thing);
+		}
+	}
+
+	function getMatches(ereg:EReg, input:String, index:Int = 0):Array<String>
+	{
+		var matches = [];
+		while (ereg.match(input))
+		{
+			matches.push(ereg.matched(index));
+			input = ereg.matchedRight();
+		}
+		return matches;
+	}
+
+	function reloadPageDisplay(number:Float = 60)
+	{
+		for (i in 0...dialogueArray.length)
+		{
+			var d = dialogueArray[i];
+			var b = new DialogueDisplayObject(0, 0, d.messageNo, d.name, d.content);
+			if (i == 0)
+			{
+				b.pos(500, number);
+			}
+			else
+			{
+				b.pos(500, dialogueSprites.members[i - 1].box.y + 80);
+			}
+
+			dialogueSprites.add(b);
+		}
 	}
 
 	function updatePageDisplay(number:Float = 60)
@@ -217,7 +363,6 @@ class PlayState extends FlxState
 		for (i in 0...dialogueSprites.length)
 		{
 			var d = dialogueSprites.members[i];
-			// trace(i);
 			if (i == 0)
 			{
 				d.pos(500, number);
@@ -229,53 +374,67 @@ class PlayState extends FlxState
 		}
 	}
 
+	function saveAs()
+	{
+		for (b in dialogueArray)
+		{
+			yamlInstance.write(b.messageNo, b.content.replace('​', ''), b.name, b.faceset, b.faceindex);
+		}
+		new FileReference().save(yamlInstance.content, "dialogue.yaml");
+	}
+
 	function write()
 	{
 		for (b in dialogueArray)
 		{
-			trace(b.faceindex, b.faceset, b.name);
 			yamlInstance.write(b.messageNo, b.content.replace('​', ''), b.name, b.faceset, b.faceindex);
 		}
-		File.saveContent('assets/data/lol.yaml', '');
-		File.saveContent('assets/data/lol.yaml', yamlInstance.content);
 	}
+
+	var x = false;
 
 	override public function update(elapsed:Float)
 	{
 		var focused = textInput.hasFocus || nameText.hasFocus || numText.hasFocus || facesetText.hasFocus || faceindexText.hasFocus;
 
-		if (FlxG.keys.justPressed.S && FlxG.keys.pressed.S && !focused)
+		if (FlxG.keys.justPressed.S && FlxG.keys.pressed.CONTROL && !focused)
 		{
-			write();
+			saveAs();
 		}
 
-		for (a in dialogueArray)
+		if (FlxG.keys.justPressed.L && FlxG.keys.pressed.CONTROL && !focused && !x)
 		{
-			if (a.messageNo == numText.text)
-			{
-				addButton.text = "Update";
-				trace("se.xsex.sex");
-				break;
-			}
-			else
-			{
-				addButton.text = "Add";
-				break;
-			}
+			load();
 		}
 
-		if (FlxG.keys.justPressed.DOWN && !focused)
+		if (FlxG.keys.justPressed.UP && !focused)
 		{
 			updatePageDisplay(dialogueSprites.members[0].y + 580);
 		}
-		else if (FlxG.keys.justPressed.UP && !focused)
+		else if (FlxG.keys.justPressed.DOWN && !focused)
 		{
 			updatePageDisplay(dialogueSprites.members[0].y - 580);
 		}
+
 		for (stuff in dialogueSprites.members)
 		{
 			if (FlxG.mouse.overlaps(stuff))
 			{
+				if (FlxG.mouse.justPressed)
+				{
+					for (d in dialogueArray)
+					{
+						if (d.messageNo == stuff.messageNo)
+						{
+							nameText.text = d.name;
+							numText.text = d.messageNo;
+							textInput.text = d.content;
+							facesetText.text = d.faceset;
+							faceindexText.text = d.faceindex;
+						}
+					}
+				}
+
 				stuff.box.x = 480;
 				stuff.upText.x = 484;
 				stuff.contentText.x = 484;
@@ -316,13 +475,13 @@ class YamlInstance
 	{
 		var toAppend = "message_" + messageNo + ":";
 		var charStr = '';
-		if (character.length != 0)
+		if (character != null && character.length != 0)
 			charStr = '<' + character + '> ';
-		if (faceset.length != 0)
+		if (faceset != null && faceset.length != 0)
 		{
 			toAppend += "\n  faceset: " + faceset;
 		}
-		if (faceindex.length != 0)
+		if (faceindex != null && faceindex.length != 0)
 		{
 			toAppend += "\n  faceindex: " + faceindex;
 		}
