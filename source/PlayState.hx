@@ -67,18 +67,16 @@ class PlayState extends FlxState
 	var savePath:String;
 
 	// regex patterns
-	final SINE = ~/(?<=sin\().*?(?=\))/g;
-	final SINE2 = ~/(?<=sin2\().*?(?=\))/g;
-	final SINEH = ~/(?<=sinh\().*?(?=\))/g;
-	final SHAKE = ~/(?<=shake\().*?(?=\))/g;
-	final SHAKE2 = ~/(?<=shake2\().*?(?=\))/g;
-	final RAINBOW = ~/(?<=rainbow\().*?(?=\))/g;
-	final ICON = ~/(?<=icon\().*?(?=\))/g;
-	final VARIABLE = ~/(?<=var\().*?(?=\))/g;
-	final ACTOR = ~/(?<=actor\().*?(?=\))/g;
-	final PARTY = ~/(?<=party\().*?(?=\))/g;
-	final EVENT = ~/(?<=event\().*?(?=\))/g;
-	final SETVAR = ~/(?<=setvar\().*?(\))/g;
+	final SINE = ~/(?<=sin!\().*?(?=\))/g;
+	final SINEH = ~/(?<=sinh!\().*?(?=\))/g;
+	final SHAKE = ~/(?<=shake!\().*?(?=\))/g;
+	final RAINBOW = ~/(?<=rainbow!\().*?(?=\))/g;
+	final ICON = ~/(?<=icon!\().*?(?=\))/g;
+	final VARIABLE = ~/(?<=var!\().*?(?=\))/g;
+	final ACTOR = ~/(?<=actor!\().*?(?=\))/g;
+	final PARTY = ~/(?<=party!\().*?(?=\))/g;
+	final EVENT = ~/(?<=event!\().*?(?=\))/g;
+	final SETVAR = ~/(?<=setvar!\().*?(\))/g;
 
 	public function new()
 	{
@@ -162,6 +160,8 @@ class PlayState extends FlxState
 			{
 				return;
 			}
+
+			textInput.text = "";
 
 			dialogueArray.push({
 				messageNo: numText.text,
@@ -291,12 +291,9 @@ class PlayState extends FlxState
 	function preProcess(content:String)
 	{
 		var sines = getMatches(SINE, content);
-		var sines2 = getMatches(SINE2, content);
 		var sinehs = getMatches(SINEH, content);
 
 		var shakes = getMatches(SHAKE, content);
-		var shakes2 = getMatches(SHAKE2, content);
-
 		var vars = getMatches(VARIABLE, content);
 		var setvars = getMatches(~/<b>()<b>/g, content);
 
@@ -310,62 +307,52 @@ class PlayState extends FlxState
 
 		for (i in sines)
 		{
-			content = content.replace('sin($i)', '\\sinv[1]$i\\sinv[0]');
-		}
-
-		for (i in sines2)
-		{
-			content = content.replace('sin2($i)', '\\sinv[2]$i\\sinv[0]');
+			content = content.replace('sin!($i)', '\\sinv[$i]');
 		}
 
 		for (i in sinehs)
 		{
-			content = content.replace('sinh($i)', '\\sinh[1]$i\\sinh[0]');
+			content = content.replace('sinh!($i)', '\\sinh[$i]');
 		}
 
 		for (i in shakes)
 		{
-			content = content.replace('shake($i)', '\\quake[1]$i\\quake[0]');
-		}
-
-		for (i in shakes2)
-		{
-			content = content.replace('shake2($i)', '\\quake[2]$i\\quake[0]');
+			content = content.replace('shake!($i)', '\\quake[$i]');
 		}
 
 		for (i in vars)
 		{
-			content = content.replace('var($i)', '\\v[$i]');
+			content = content.replace('var!($i)', '\\v[$i]');
 		}
 
 		for (i in actors)
 		{
-			content = content.replace('actor($i)', '\\n[$i]');
+			content = content.replace('actor!($i)', '\\n[$i]');
 		}
 
 		for (i in partyMembers)
 		{
-			content = content.replace('party($i)', '\\p[$i]');
+			content = content.replace('party!($i)', '\\p[$i]');
 		}
 
 		for (i in icons)
 		{
-			content = content.replace('icon($i)', '\\i[$i]');
+			content = content.replace('icon!($i)', '\\i[$i]');
 		}
 
 		for (i in events)
 		{
-			content = content.replace('event($i)', '\\Com[$i]');
+			content = content.replace('event!($i)', '\\Com[$i]');
 		}
 
 		for (i in setvars)
 		{
-			content = content.replace('setvar($i)', '\\VarS[$i]');
+			content = content.replace('setvar!($i)', '\\VarS[$i]');
 		}
 
 		for (i in rainbows)
 		{
-			content = content.replace('rainbow($i)', '\\rainbow[$i]');
+			content = content.replace('rainbow!($i)', '\\rainbow[$i]');
 		}
 
 		return content;
