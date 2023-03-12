@@ -22,6 +22,6 @@ class Main extends Sprite
 		final zoom:Float = Math.min(ratioX, ratioY);
 		gameWidth = Math.ceil(stageWidth / zoom);
 		gameHeight = Math.ceil(stageHeight / zoom);
-		addChild(new FlxGame(gameWidth, gameHeight, PlayState, zoom));
+		addChild(new FlxGame(gameWidth, gameHeight, PlayState, #if (flixel < "5.0.0") zoom #end));
 	}
 }
