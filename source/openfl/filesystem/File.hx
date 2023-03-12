@@ -9,7 +9,6 @@ import openfl.errors.IllegalOperationError;
 import openfl.errors.ArgumentError;
 import openfl.errors.Error;
 import openfl.events.Event;
-import openfl.events.IOErrorEvent;
 import openfl.net.FileFilter;
 import openfl.events.FileListEvent;
 import openfl.net.FileReference;
@@ -845,25 +844,12 @@ class File extends FileReference
 
 		try
 		{
-			if (isDirectory)
+			var path:String = Path.directory(newPath);
+			if (!FileSystem.exists(path))
 			{
-				FileSystem.createDirectory(newPath);
-				var files:Array<File> = getDirectoryListing();
-				for (file in files)
-				{
-					var newFile = new File(Path.join([newPath, file.name]));
-					file.copyTo(newFile);
-				}
+				FileSystem.createDirectory(path);
 			}
-			else
-			{
-				var newDirectory:String = Path.directory(newPath);
-				if (!FileSystem.exists(newDirectory))
-				{
-					FileSystem.createDirectory(newDirectory);
-				}
-				HaxeFile.copy(__path, newPath);
-			}
+			HaxeFile.copy(__path, newPath);
 		}
 		catch (e:Dynamic)
 		{
@@ -918,18 +904,7 @@ class File extends FileReference
 
 		__fileWorker.doWork.add(function(m:Dynamic)
 		{
-			try
-			{
-				copyTo(newLocation, overwrite);
-			}
-			catch (e:Dynamic)
-			{
-				__fileWorker.cancel();
-				__fileWorker = null;
-
-				__dispatchIoError(e);
-				return;
-			}
+			copyTo(newLocation, overwrite);
 
 			dispatchEvent(new Event(Event.COMPLETE));
 
@@ -1029,18 +1004,8 @@ class File extends FileReference
 
 		__fileWorker.doWork.add(function(m:Dynamic)
 		{
-			try
-			{
-				deleteDirectory(deleteDirectoryContents);
-			}
-			catch (e:Dynamic)
-			{
-				__fileWorker.cancel();
-				__fileWorker = null;
-
-				__dispatchIoError(e);
-				return;
-			}
+			deleteDirectory(deleteDirectoryContents);
+			FileSystem.deleteFile(__path);
 
 			dispatchEvent(new Event(Event.COMPLETE));
 
@@ -1088,18 +1053,7 @@ class File extends FileReference
 
 		__fileWorker.doWork.add(function(m:Dynamic)
 		{
-			try
-			{
-				deleteFile();
-			}
-			catch (e:Dynamic)
-			{
-				__fileWorker.cancel();
-				__fileWorker = null;
-
-				__dispatchIoError(e);
-				return;
-			}
+			deleteFile();
 
 			dispatchEvent(new Event(Event.COMPLETE));
 
@@ -1371,15 +1325,8 @@ class File extends FileReference
 		{
 			throw new Error("Overwrite is set to false");
 		}
-		copyTo(newLocation, overwrite);
-		if (isDirectory)
-		{
-			deleteDirectory(true);
-		}
-		else
-		{
-			deleteFile();
-		}
+		HaxeFile.copy(nativePath, newLocation.__path);
+		FileSystem.deleteFile(__path);
 	}
 
 	/**
@@ -1433,18 +1380,8 @@ class File extends FileReference
 
 		__fileWorker.doWork.add(function(m:Dynamic)
 		{
-			try
-			{
-				moveTo(newLocation, overwrite);
-			}
-			catch (e:Dynamic)
-			{
-				__fileWorker.cancel();
-				__fileWorker = null;
-
-				__dispatchIoError(e);
-				return;
-			}
+			copyTo(newLocation, overwrite);
+			FileSystem.deleteFile(__path);
 
 			dispatchEvent(new Event(Event.COMPLETE));
 
@@ -1650,27 +1587,6 @@ class File extends FileReference
 		this.dispatchEvent(new FileListEvent(FileListEvent.SELECT_MULTIPLE, files));
 	}
 
-	@:noCompletion private function __dispatchIoError(e:Dynamic):Void
-	{
-		if (hasEventListener(IOErrorEvent.IO_ERROR))
-		{
-			if (#if (haxe_ver >= 4.2) Std.isOfType #else Std.is #end (e, Error))
-			{
-				var error = (e : Error);
-				dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR, false, false, error.message, error.errorID));
-			}
-			else
-			{
-				dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
-			}
-		}
-		else
-		{
-			// if there's no listener, throw it again
-			throw e;
-		}
-	}
-
 	@:noCompletion private function __formatPath(path:String):String
 	{
 		var dirs:Array<String> = [];
@@ -1707,29 +1623,20 @@ class File extends FileReference
 
 	@:noCompletion private function __getFilterTypes(typeFilter:Array<FileFilter>):String
 	{
-		var filterString:String = null;
-		var filters = [];
+		var filter:String = null;
 
 		if (typeFilter != null)
 		{
-			for (filter in typeFilter)
-			{
-				var types:Array<String> = filter.extension.split(";");
+			var filters = [];
 
-				for (type in types)
-				{
-					filters.push(StringTools.replace(type, "*.", ""));
-				}
+			for (type in typeFilter)
+			{
+				filters.push(StringTools.replace(StringTools.replace(type.extension, "*.", ""), ";", ","));
 			}
 
-			filterString = filters.join(",");
+			filter = filters.join(";");
 		}
-
-		#if (lime >= "8.0.1")
-		return filterString;
-		#else
-		return filters[0];
-		#end
+		return filter;
 	}
 
 	@:noCompletion private static function __getTempPath(dir:Bool):String
@@ -1750,19 +1657,19 @@ class File extends FileReference
 			}
 		}
 
-		var tempPath = "";
+		path = Path.join([path, "ofl" + Math.round(0xFFFFFF * Math.random())]);
 
-		while (FileSystem.exists(tempPath = Path.join([path, "ofl" + Math.round(0xFFFFFF * Math.random())])))
+		while (FileSystem.exists(path))
 		{
-			// repeat
+			path = Path.join([path, "ofl" + Math.round(0xFFFFFF * Math.random())]);
 		}
 
 		if (dir)
 		{
-			return Path.addTrailingSlash(tempPath);
+			return Path.addTrailingSlash(path);
 		}
 
-		return tempPath + ".tmp";
+		return path + ".tmp";
 	}
 
 	@:noCompletion private function __winGetHiddenAttr():Bool
@@ -1912,8 +1819,7 @@ class File extends FileReference
 
 	@:noCompletion private function get_isDirectory():Bool
 	{
-		// isDirectory throws an exception if the file doesn't exist
-		return FileSystem.exists(__path) && FileSystem.isDirectory(__path);
+		return FileSystem.isDirectory(__path);
 	}
 
 	@:noCompletion private function get_parent():File
