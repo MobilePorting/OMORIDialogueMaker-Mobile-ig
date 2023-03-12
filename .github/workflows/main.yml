@@ -48,7 +48,7 @@ jobs:
           haxelib --quiet install openfl 9.2.1
           haxelib --quiet install flixel 4.11.0
           haxelib --quiet install flixel-addons 2.11.0
-          # haxelib --quiet install flixel-ui
+          haxelib --quiet install flixel-ui
           haxelib --quiet install hscript
           haxelib --quiet install yaml
           haxelib --quiet install texter
