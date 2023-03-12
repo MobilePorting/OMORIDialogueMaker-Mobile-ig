@@ -3,6 +3,7 @@ package;
 import flixel.FlxGame;
 import lime.utils.LogLevel;
 import openfl.display.Sprite;
+import openfl.Lib;
 
 class Main extends Sprite
 {
