@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-${{ matrix.ubuntuver }} 
     strategy:
       matrix:
-        ubuntuver: [20.04, 22.04]
-        build: [release, debug]
-        arch: [armv6, armv7, arm64, 32, 64]
+        ubuntuver: [20.04]
+        build: [release]
+        arch: [armv7, arm64, 32, 64]
     steps:
       - name: Checkout
         uses: actions/checkout@main
@@ -37,7 +37,7 @@ jobs:
           haxelib --quiet install hxcpp 4.2.1
           haxelib --quiet install lime 7.9.0
           haxelib --quiet install openfl 9.2.1
-          haxelib --quiet install flixel 4.11.0
+          haxelib --quiet git flixel https://github.com/mcagabe19/flixel-4.11.0.git
           haxelib --quiet install flixel-addons 2.11.0
           haxelib --quiet install flixel-ui
           haxelib --quiet install hscript
