@@ -435,7 +435,7 @@ class File extends FileReference
 	/**
 		Displays a file-browsing dialog box that lets the user select a file to upload.
 	**/
-	override public function browse(typeFilter:Array<FileFilter> = null):Bool
+        public function browse(typeFilter:Array<FileFilter> = null):Bool
 	{
 		browseForOpen("Open", typeFilter);
 		return false;
@@ -684,7 +684,7 @@ class File extends FileReference
 	/**
 		Cancels any pending asynchronous operation.
 	**/
-	override public function cancel():Void
+	public function cancel():Void
 	{
 		__fileWorker.cancel();
 		dispatchEvent(new Event(Event.CANCEL));
@@ -1737,7 +1737,7 @@ class File extends FileReference
 		return new File(Path.removeTrailingSlashes(System.userDirectory));
 	}
 
-	@:noCompletion override private function get_creationDate():Date
+	@:noCompletion private function get_creationDate():Date
 	{
 		if (__fileStatsDirty)
 		{
@@ -1746,7 +1746,7 @@ class File extends FileReference
 		return creationDate;
 	}
 
-	@:noCompletion override private function get_modificationDate():Date
+	@:noCompletion private function get_modificationDate():Date
 	{
 		if (__fileStatsDirty)
 		{
@@ -1755,7 +1755,7 @@ class File extends FileReference
 		return modificationDate;
 	}
 
-	@:noCompletion override private function get_name():String
+	@:noCompletion private function get_name():String
 	{
 		if (__fileStatsDirty)
 		{
@@ -1764,7 +1764,7 @@ class File extends FileReference
 		return name;
 	}
 
-	@:noCompletion override private function get_size():Int
+	@:noCompletion private function get_size():Int
 	{
 		if (__fileStatsDirty)
 		{
@@ -1773,7 +1773,7 @@ class File extends FileReference
 		return size;
 	}
 
-	@:noCompletion override private function get_type():String
+	@:noCompletion private function get_type():String
 	{
 		if (__fileStatsDirty)
 		{
