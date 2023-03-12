@@ -29,7 +29,9 @@
 
 	<!-- _____________________________ Path Settings ____________________________ -->
 
-	<set name="BUILD_DIR" value="export" />
+	<set name="BUILD_DIR" value="export/debug" if="debug" />
+	<set name="BUILD_DIR" value="export/release" unless="debug" />
+	<!--<set name="BUILD_DIR" value="export/32bit" if="32bits" />-->
 	<source path="source" />
 	<assets path="assets" />
 
@@ -81,6 +83,10 @@
 
 	<!--Enable this for Nape release builds for a serious peformance improvement-->
 	<haxedef name="NAPE_RELEASE_BUILD" unless="debug" />
+
+        <haxedef name="no-deprecation-warnings" unless="debug" />
+
+        <haxedef name="openfl_dpi_aware"/>
 
 	<!--Always enable Null Object Reference check-->
 	<haxedef name="HXCPP_CHECK_POINTER" />
