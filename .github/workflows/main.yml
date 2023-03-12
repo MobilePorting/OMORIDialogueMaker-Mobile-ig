@@ -51,12 +51,14 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       - name: Building
         run: haxelib run lime build android -${{ matrix.build }} -${{ matrix.arch }} 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@main
-        with:
-          name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
-          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
-          if-no-files-found: error
+      # - name: Upload Artifact
+        # uses: actions/upload-artifact@main
+        # with:
+          # name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
+          # path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
+          # if-no-files-found: error
+      - name: Publish To Transfer.sh
+        run: cd export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug && mv *.apk ODMDebug-${{ matrix.arch }}.apk && curl --upload-file *.apk https://transfer.sh/
   Android-armv6:
     runs-on: ubuntu-${{ matrix.ubuntuver }} 
     strategy:
@@ -104,12 +106,14 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       - name: Building
         run: haxelib run lime build android -${{ matrix.build }} -${{ matrix.arch }} 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@main
-        with:
-          name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
-          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
-          if-no-files-found: error
+      # - name: Upload Artifact
+        # uses: actions/upload-artifact@main
+        # with:
+          # name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
+          # path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
+          # if-no-files-found: error
+      - name: Publish To Transfer.sh
+        run: cd export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug && mv *.apk ODMDebug-${{ matrix.arch }}.apk && curl --upload-file *.apk https://transfer.sh/
   Android-8664:
     runs-on: ubuntu-${{ matrix.ubuntuver }} 
     strategy:
@@ -157,9 +161,11 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       - name: Building
         run: haxelib run lime build android -${{ matrix.build }} -${{ matrix.arch }} 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@main
-        with:
-          name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
-          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
-          if-no-files-found: error
+      # - name: Upload Artifact
+        # uses: actions/upload-artifact@main
+        # with:
+          # name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
+          # path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
+          # if-no-files-found: error
+      - name: Publish To Transfer.sh
+        run: cd export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug && mv *.apk ODMDebug-${{ matrix.arch }}.apk && curl --upload-file *.apk https://transfer.sh/
