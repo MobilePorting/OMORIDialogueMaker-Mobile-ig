@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
-          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk'
+          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
           if-no-files-found: error
   Android-armv6:
     runs-on: ubuntu-${{ matrix.ubuntuver }} 
@@ -108,7 +108,7 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
-          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk'
+          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
           if-no-files-found: error
   Android-8664:
     runs-on: ubuntu-${{ matrix.ubuntuver }} 
@@ -161,5 +161,5 @@ jobs:
         uses: actions/upload-artifact@main
         with:
           name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
-          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk'
+          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
           if-no-files-found: error
