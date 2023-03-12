@@ -10,7 +10,7 @@ jobs:
       matrix:
         ubuntuver: [20.04]
         build: [release]
-        arch: [armv7, arm64, 32, 64]
+        arch: [armv7, arm64, 32]
     steps:
       - name: Checkout
         uses: actions/checkout@main
@@ -85,6 +85,59 @@ jobs:
         run: |
           haxelib --quiet install hxcpp 4.2.1
           haxelib --quiet install lime 7.9.0
+          haxelib --quiet install openfl 9.2.1
+          haxelib --quiet git flixel https://github.com/mcagabe19/flixel-4.11.0.git
+          haxelib --quiet install flixel-addons 2.11.0
+          haxelib --quiet install flixel-ui
+          haxelib --quiet install hscript
+          haxelib --quiet install yaml
+          haxelib --quiet install texter
+          haxelib --quiet git extension-androidtools https://github.com/MAJigsaw77/extension-androidtools.git
+      - name: Configure Android
+        run: |
+          haxelib run lime setup -alias -y
+          haxelib run lime config ANDROID_SDK $ANDROID_HOME
+          haxelib run lime config ANDROID_NDK_ROOT $ANDROID_NDK_HOME
+          haxelib run lime config JAVA_HOME $JAVA_HOME
+          haxelib run lime config ANDROID_SETUP true
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+      - name: Building
+        run: haxelib run lime build android -${{ matrix.build }} -${{ matrix.arch }} 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
+          path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
+          if-no-files-found: error
+  Android-8664:
+    runs-on: ubuntu-${{ matrix.ubuntuver }} 
+    strategy:
+      matrix:
+        ubuntuver: [20.04]
+        build: [release]
+        arch: [64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@main
+        id: setup-ndk
+        with:
+          ndk-version: r21e
+      - name: Setup Java JDK
+        uses: actions/setup-java@main
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.2.5
+      - name: Installing Libraries
+        run: |
+          haxelib --quiet install hxcpp 4.2.1
+          haxelib --quiet git lime https://github.com/mcagabe19/lime.git
           haxelib --quiet install openfl 9.2.1
           haxelib --quiet git flixel https://github.com/mcagabe19/flixel-4.11.0.git
           haxelib --quiet install flixel-addons 2.11.0
