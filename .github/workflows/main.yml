@@ -1,28 +1,19 @@
-# This is a basic workflow to help you get started with Actions
+name: Android Build CI
 
-name: CI
-
-# Controls when the action will run.
 on:
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  androidBuild:
-    runs-on: ubuntu-latest
+  Android:
+    runs-on: ubuntu-${{ matrix.ubuntuver }} 
     strategy:
       matrix:
+        ubuntuver: [20.04, 22.04]
         build: [release, debug]
+        arch: [armv6, armv7, arm64, 32, 64]
     steps:
       - name: Checkout
         uses: actions/checkout@main
-
-      # - name: Install System Dependencies
-        # run: |
-          # sudo apt-get update
-          # sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev g++-multilib gcc-multilib libasound2-dev libx11-dev libxext-dev libxi-dev libxrandr-dev libxinerama-dev libmbedtls-dev libpng-dev libturbojpeg-dev libuv1-dev libvorbis-dev
 
       - name: Setup Android NDK
         uses: nttld/setup-ndk@main
@@ -34,7 +25,7 @@ jobs:
         uses: actions/setup-java@main
         with:
           distribution: 'zulu'
-          java-version: '19'
+          java-version: '11'
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@master
@@ -43,7 +34,7 @@ jobs:
 
       - name: Installing Libraries
         run: |
-          haxelib --quiet install hxcpp
+          haxelib --quiet install hxcpp 4.2.1
           haxelib --quiet install lime 7.9.0
           haxelib --quiet install openfl 9.2.1
           haxelib --quiet install flixel 4.11.0
@@ -65,11 +56,11 @@ jobs:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
 
       - name: Building
-        run: haxelib run lime build android -${{ matrix.build }}
+        run: haxelib run lime build android -${{ matrix.build }} -${{ matrix.arch }} 
 
       - name: Upload Artifact
         uses: actions/upload-artifact@main
         with:
-          name: androidBuild-${{ matrix.build }}
+          name: buildUbuntu-${{ matrix.ubuntuver }}-${{ matrix.arch }}-${{ matrix.build }}-android
           path: 'export/${{ matrix.build }}/android/bin/app/build/outputs/apk/debug/*.apk'
           if-no-files-found: error
