@@ -8,6 +8,7 @@ class Main extends Sprite
 {
 	public function new()
 	{
+                SUtil.uncaughtErrorHandler();
 		super();
 		openfl.utils._internal.Log.level = LogLevel.WARN;
 		addChild(new FlxGame(0, 0, PlayState));
