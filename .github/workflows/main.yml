@@ -30,11 +30,11 @@ jobs:
           haxe-version: 4.2.5
       - name: Installing Libraries
         run: |
-          haxelib --quiet install hxcpp 4.2.1
-          haxelib --quiet install lime 7.9.0
-          haxelib --quiet install openfl 9.2.1
-          haxelib --quiet git flixel https://github.com/mcagabe19/flixel-4.11.0.git
-          haxelib --quiet install flixel-addons 2.11.0
+          haxelib --quiet install hxcpp
+          haxelib --quiet install lime
+          haxelib --quiet install openfl
+          haxelib --quiet install flixel
+          haxelib --quiet install flixel-addons
           haxelib --quiet install flixel-ui
           haxelib --quiet install hscript
           haxelib --quiet install yaml
